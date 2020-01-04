@@ -19,27 +19,29 @@ async function getSiteData() {
   return await data;
 }
 
-// puts scraped items into an array
-// split into array of objects with an id and name
-const grabCharacterNames = data => {
-  return data('figcaption')
-    .map((index, element) =>
-      data(element)
-        .text()
-        .trim(),
-    )
+const grabCharacterNames = $ => {
+  return $('figcaption')
+    .map((index, element) => {
+      return {
+        id: index,
+        name: $(element)
+          .text()
+          .trim(),
+      };
+    })
     .toArray();
 };
 
 // so far just grabbing one photo, want to grab all photo links
-const grabCharacterPhotos = data => {
-  return data('.attachment-thumbnail.size-thumbnail').attr('src');
+const grabCharacterPhotos = $ => {
+  return $('.attachment-thumbnail.size-thumbnail').attr('src');
 };
 
 async function run() {
   const $ = await getSiteData();
   const characterNames = grabCharacterNames($);
   console.log(characterNames);
+  // console.log(parseCharacterNames(characterNames));
 
   const characterPhotos = grabCharacterPhotos($);
   console.log(characterPhotos);
