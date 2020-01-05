@@ -1,11 +1,14 @@
-let axios = require('axios');
-let cheerio = require('cheerio');
-let fs = require('fs');
+const axios = require('axios');
+const cheerio = require('cheerio');
+const fs = require('fs');
+const csv = require('fast-csv');
 
-let url =
+const url =
   'http://popvinyls.com/funko-pop-vinyls-series/game-thrones-series/';
 
-async function getSiteData() {
+const dir = './images';
+
+const getSiteData = async () => {
   const data = await axios
     .get(url)
     .then(response => {
@@ -17,7 +20,7 @@ async function getSiteData() {
       console.log(error);
     });
   return await data;
-}
+};
 
 const grabCharacterNames = $ => {
   return $('figcaption')
@@ -32,19 +35,75 @@ const grabCharacterNames = $ => {
     .toArray();
 };
 
-// so far just grabbing one photo, want to grab all photo links
 const grabCharacterPhotos = $ => {
-  return $('.attachment-thumbnail.size-thumbnail').attr('src');
+  const singleCharacters = $('.attachment-thumbnail.size-thumbnail')
+    .map((index, element) => {
+      return {
+        id: index,
+        link: $(element).attr('src'),
+      };
+    })
+    .toArray();
+
+  const comboCharacters = $('.attachment-medium.size-medium')
+    .map((index, element) => {
+      return {
+        id: index,
+        link: $(element).attr('src'),
+      };
+    })
+    .toArray();
+  return singleCharacters.concat(comboCharacters);
+};
+
+const combineNamesAndPhotos = (namesArray, photosArray) => {
+  return namesArray.map(element => {
+    return {
+      id: element.id,
+      name: element.name,
+      link: photosArray[element.id].link,
+    };
+  });
+};
+
+const grabCharacterData = $ => {
+  let characterNames = grabCharacterNames($);
+  let characterPhotos = grabCharacterPhotos($);
+  return combineNamesAndPhotos(characterNames, characterPhotos);
+};
+
+const createFolder = path => {
+  if (!fs.existsSync(path)) {
+    fs.mkdirSync(path);
+  }
+  process.chdir(path);
+};
+
+const savePhotosToDisk = async characterArray => {
+  createFolder(dir);
+  const data = await characterArray.map(element => {
+    axios
+      .get(element.link, { responseType: 'stream' })
+      .then(response => {
+        response.data.pipe(fs.createWriteStream(`${element.id}.png`));
+      })
+      .catch(error => console.log(error));
+  });
+  return await data;
+};
+
+const saveCharacterDataToCsv = characterData => {
+  csv
+    .write(characterData, { headers: true })
+    .pipe(fs.createWriteStream('characters.csv'));
 };
 
 async function run() {
   const $ = await getSiteData();
-  const characterNames = grabCharacterNames($);
-  console.log(characterNames);
-  // console.log(parseCharacterNames(characterNames));
+  const characterData = grabCharacterData($);
 
-  const characterPhotos = grabCharacterPhotos($);
-  console.log(characterPhotos);
+  saveCharacterDataToCsv(characterData);
+  savePhotosToDisk(characterData);
 }
 
 run();
