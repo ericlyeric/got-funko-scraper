@@ -26,7 +26,7 @@ const grabCharacterNames = $ => {
   return $('figcaption')
     .map((index, element) => {
       return {
-        number: index,
+        id: index,
         name: $(element)
           .text()
           .trim(),
@@ -39,7 +39,7 @@ const grabCharacterPhotos = $ => {
   const singleCharacters = $('.attachment-thumbnail.size-thumbnail')
     .map((index, element) => {
       return {
-        number: index,
+        id: index,
         link: $(element).attr('src'),
       };
     })
@@ -48,7 +48,7 @@ const grabCharacterPhotos = $ => {
   const comboCharacters = $('.attachment-medium.size-medium')
     .map((index, element) => {
       return {
-        number: index,
+        id: index,
         link: $(element).attr('src'),
       };
     })
@@ -59,9 +59,9 @@ const grabCharacterPhotos = $ => {
 const combineNamesAndPhotos = (namesArray, photosArray) => {
   return namesArray.map(element => {
     return {
-      number: element.number,
+      id: element.id,
       name: element.name,
-      link: photosArray[element.number].link,
+      link: photosArray[element.id].link,
     };
   });
 };
@@ -85,7 +85,7 @@ const savePhotosToDisk = async characterArray => {
     axios
       .get(element.link, { responseType: 'stream' })
       .then(response => {
-        response.data.pipe(fs.createWriteStream(`${element.number}.png`));
+        response.data.pipe(fs.createWriteStream(`${element.id}.png`));
       })
       .catch(error => console.log(error));
   });
