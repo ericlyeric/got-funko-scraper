@@ -26,7 +26,7 @@ const grabCharacterNames = $ => {
   return $('figcaption')
     .map((index, element) => {
       return {
-        id: index,
+        number: index,
         name: $(element)
           .text()
           .trim(),
@@ -39,7 +39,7 @@ const grabCharacterPhotos = $ => {
   const singleCharacters = $('.attachment-thumbnail.size-thumbnail')
     .map((index, element) => {
       return {
-        id: index,
+        number: index,
         link: $(element).attr('src'),
       };
     })
@@ -48,7 +48,7 @@ const grabCharacterPhotos = $ => {
   const comboCharacters = $('.attachment-medium.size-medium')
     .map((index, element) => {
       return {
-        id: index,
+        number: index,
         link: $(element).attr('src'),
       };
     })
@@ -59,9 +59,9 @@ const grabCharacterPhotos = $ => {
 const combineNamesAndPhotos = (namesArray, photosArray) => {
   return namesArray.map(element => {
     return {
-      id: element.id,
+      number: element.number,
       name: element.name,
-      link: photosArray[element.id].link,
+      link: photosArray[element.number].link,
     };
   });
 };
@@ -85,7 +85,7 @@ const savePhotosToDisk = async characterArray => {
     axios
       .get(element.link, { responseType: 'stream' })
       .then(response => {
-        response.data.pipe(fs.createWriteStream(`${element.id}.png`));
+        response.data.pipe(fs.createWriteStream(`${element.number}.png`));
       })
       .catch(error => console.log(error));
   });
@@ -98,11 +98,20 @@ const saveCharacterDataToCsv = characterData => {
     .pipe(fs.createWriteStream('characters.csv'));
 };
 
+const saveCharacterDataToJson = characterData => {
+  fs.writeFile("characters.json", JSON.stringify(characterData), (err) => {
+    if (err) {
+      console.log(err);
+    }
+  })
+}
+
 async function run() {
   const $ = await getSiteData();
   const characterData = grabCharacterData($);
 
   saveCharacterDataToCsv(characterData);
+  saveCharacterDataToJson(characterData);
   savePhotosToDisk(characterData);
 }
 
